@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentYear;
     let currentMonth; // 0-indexed (0 for January, 11 for December)
-    let events = {}; // Will be populated from the server
+    let events = {}; // 서버에서 데이터를 불러올 예정
 
     // Populate year and month select dropdowns
     const currentFullYear = new Date().getFullYear();
@@ -153,13 +153,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         currentMonthYearHeader.textContent = `${year}년 ${month + 1}월`;
-        await fetchEventsFromServer(); // Fetch events after rendering the calendar structure
+        await fetchEventsFromServer(year, month); // Fetch events after rendering the calendar structure
     }
 
-    async function fetchEventsFromServer() {
-        // Consider filtering by year/month on the backend in the future for performance
-        console.log(`Workspaceing all events from server...`);
+    async function fetchEventsFromServer(year, month) {
+        console.log(`Fetching events for ${year}-${month + 1} from server...`);
         try {
+            // Fetch all events from the server
+            // Note: The backend currently returns all events, not filtered by month/year.
+            // If needed, update backend /api/events GET to accept year/month params.
+            // TODO: If client is served from a different domain/port than backend API, update fetch URL
             const response = await fetch('/api/events'); // Use the backend API endpoint
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -170,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
             displayEvents(); // Display fetched events
         } catch (error) {
             console.error("Failed to fetch events:", error);
+            // Handle error (e.g., show error message to user)
             alert('일정 불러오기에 실패했습니다.');
         }
     }
@@ -186,8 +190,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Limit to 6 events for display in the calendar cell
                 events[date].slice(0, 6).forEach(event => {
                     const eventDiv = document.createElement('div');
-                    // Display only content, make it smaller
-                    eventDiv.innerHTML = `<p class="calendar-event-item">${event.content}</p>`;
+                    eventDiv.innerHTML = `
+                        <p>${event.author} ${event.content}</p>
+                    `; // 작성자와 내용을 함께 표시
                     eventListForDay.appendChild(eventDiv);
                 });
                  // Add indicator if there are more than 6 events
@@ -196,7 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     moreIndicator.textContent = `... 외 ${events[date].length - 6}개`;
                     moreIndicator.style.fontSize = '0.7em';
                     moreIndicator.style.color = '#8e8e8e';
-                    moreIndicator.style.marginTop = '2px';
                     eventListForDay.appendChild(moreIndicator);
                 }
             }
@@ -210,32 +214,25 @@ document.addEventListener('DOMContentLoaded', () => {
         eventListDiv.innerHTML = ''; // Clear previous event list in popup
 
         const eventsForDate = events[date] || [];
-        if (eventsForDate.length === 0) {
-            eventListDiv.innerHTML = '<p>이 날짜에 등록된 일정이 없습니다.</p>';
-        } else {
-            eventsForDate.forEach(event => { // No index needed here anymore
-                const eventDiv = document.createElement('div');
-                eventDiv.classList.add('event-popup-item'); // Add a class for styling
-                eventDiv.innerHTML = `
-                    <div class="event-details">
-                        <strong>${event.author}:</strong>
-                        <p>${event.content}</p>
-                    </div>
-                    <button class="delete-event" data-event-id="${event.id}">삭제</button>
-                `; // data-event-id attribute has the event ID
-                eventListDiv.appendChild(eventDiv);
-            });
-        }
+        eventsForDate.forEach((event, index) => {
+            const eventDiv = document.createElement('div');
+            eventDiv.innerHTML = `
+                <div class="event-details">
+                    <strong>${event.author}</strong>
+                    <p>${event.content}</p>
+                </div>
+                <button class="delete-event" data-event-id="${event.id}">삭제</button>
+            `; // data-event-id 속성에 이벤트 ID 추가
+            eventListDiv.appendChild(eventDiv);
+        });
 
-        // Add event listeners for delete buttons (use event delegation for efficiency)
+        // Add event listeners for delete buttons
         eventListDiv.querySelectorAll('.delete-event').forEach(button => {
-             button.addEventListener('click', async (e) => {
-                 if (confirm('정말로 이 일정을 삭제하시겠습니까?')) {
-                     const eventIdToDelete = e.target.dataset.eventId; // Get event ID
-                     await deleteEvent(eventIdToDelete); // Call deleteEvent with the ID
-                 }
-             });
-         });
+            button.addEventListener('click', async (e) => {
+                const eventIdToDelete = e.target.dataset.eventId; // 이벤트 ID 가져오기
+                await deleteEvent(eventIdToDelete);
+            });
+        });
 
         eventPopup.style.display = 'flex'; // Show the popup
         saveEventButton.dataset.date = date; // Store date for saving
@@ -254,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const newEvent = { author, content };
             console.log("Saving event to server:", { date, event: newEvent });
             try {
+                // TODO: If client is served from a different domain/port than backend API, update fetch URL
                 const response = await fetch('/api/events', { // Use the backend API endpoint
                     method: 'POST',
                     headers: {
@@ -262,47 +260,48 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ date, event: newEvent }),
                 });
                 if (!response.ok) {
-                     const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' })); // Try to parse error
-                     throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message}`);
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 // Assuming successful save, re-fetch and render calendar
                 closeEventPopup();
-                await renderCalendar(currentYear, currentMonth); // Use await here
+                renderCalendar(currentYear, currentMonth);
             } catch (error) {
                 console.error("Failed to save event:", error);
-                alert(`일정 저장에 실패했습니다: ${error.message}`);
+                alert('일정 저장에 실패했습니다.');
+                // Handle error
             }
         } else {
             alert('작성자와 내용을 모두 입력해주세요.');
         }
     }
 
-    // *** CORRECTED deleteEvent function ***
-    async function deleteEvent(eventId) { // Accepts eventId now
-        console.log("Deleting event from server:", { eventId });
-        try {
-            // Make the actual API call to the backend DELETE endpoint
-            const response = await fetch(`/api/events/${eventId}`, { // Use the correct endpoint with eventId
-                method: 'DELETE',
-            });
+    async function deleteEvent(date, index) {
+        if (events[date] && events[date][index]) {
+            const eventToDelete = events[date][index];
+            // TODO: Replace with actual API call to delete the event
+            console.log("Deleting event from server:", { date, index, event: eventToDelete });
+             try {
+                // Example fetch (replace with your actual endpoint and method)
+                // const response = await fetch(`/api/events?date=${date}&index=${index}`, {
+                //     method: 'DELETE',
+                // });
+                // if (!response.ok) {
+                //     throw new Error(`HTTP error! status: ${response.status}`);
+                // }
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' })); // Try to parse error
-                throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message}`);
+                // For placeholder, manually remove from events object
+                events[date].splice(index, 1);
+                if (events[date].length === 0) {
+                    delete events[date]; // Remove date key if no events left
+                }
+
+                openEventPopup(date); // Refresh popup content
+                renderCalendar(currentYear, currentMonth); // Re-render calendar to remove event
+            } catch (error) {
+                console.error("Failed to delete event:", error);
+                alert('일정 삭제에 실패했습니다.');
+                // Handle error
             }
-
-             console.log("Event deleted successfully from server");
-
-             // Re-fetch events and update UI
-             const currentDate = popupDateHeader.textContent; // Get date from popup header
-             await fetchEventsFromServer(); // Fetch updated list from server
-             renderCalendar(currentYear, currentMonth); // Re-render calendar
-             openEventPopup(currentDate); // Refresh popup content with updated data
-
-        } catch (error) {
-            console.error("Failed to delete event:", error);
-            alert(`일정 삭제에 실패했습니다: ${error.message}`);
-            // Handle error (e.g., maybe just close popup or show error in popup)
         }
     }
 });
