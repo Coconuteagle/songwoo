@@ -1,0 +1,2 @@
+Flask>=2.0 # Use a specific Flask version or range if needed
+gunicorn>=20.0 # Add Gunicorn for the WSGI server
