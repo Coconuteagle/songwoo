@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         eventListDiv.querySelectorAll('.delete-event').forEach(button => {
             button.addEventListener('click', async (e) => {
                 const eventIdToDelete = e.target.dataset.eventId; // 이벤트 ID 가져오기
-                await deleteEvent(eventIdToDelete);
+                await deleteEvent(eventIdToDelete); // 이벤트 ID를 deleteEvent 함수에 전달
             });
         });
 
@@ -275,33 +275,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function deleteEvent(date, index) {
-        if (events[date] && events[date][index]) {
-            const eventToDelete = events[date][index];
-            // TODO: Replace with actual API call to delete the event
-            console.log("Deleting event from server:", { date, index, event: eventToDelete });
-             try {
-                // Example fetch (replace with your actual endpoint and method)
-                // const response = await fetch(`/api/events?date=${date}&index=${index}`, {
-                //     method: 'DELETE',
-                // });
-                // if (!response.ok) {
-                //     throw new Error(`HTTP error! status: ${response.status}`);
-                // }
-
-                // For placeholder, manually remove from events object
-                events[date].splice(index, 1);
-                if (events[date].length === 0) {
-                    delete events[date]; // Remove date key if no events left
-                }
-
-                openEventPopup(date); // Refresh popup content
-                renderCalendar(currentYear, currentMonth); // Re-render calendar to remove event
-            } catch (error) {
-                console.error("Failed to delete event:", error);
-                alert('일정 삭제에 실패했습니다.');
-                // Handle error
+    async function deleteEvent(eventId) {
+        console.log("Deleting event with ID:", eventId);
+        try {
+            const response = await fetch(`/api/events/${eventId}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            // Assuming successful deletion on server, update client-side events
+            // Find the event in the events object and remove it
+            let dateOfDeletedEvent = null;
+            for (const date in events) {
+                const initialLength = events[date].length;
+                events[date] = events[date].filter(event => event.id !== eventId);
+                if (events[date].length < initialLength) {
+                    dateOfDeletedEvent = date;
+                    if (events[date].length === 0) {
+                        delete events[date]; // Remove date key if no events left
+                    }
+                    break; // Event found and removed, no need to continue searching
+                }
+            }
+
+            if (dateOfDeletedEvent) {
+                 // Re-open popup for the date where the event was deleted, or close if no events left
+                if (events[dateOfDeletedEvent] && events[dateOfDeletedEvent].length > 0) {
+                     openEventPopup(dateOfDeletedEvent);
+                } else {
+                    closeEventPopup();
+                }
+                renderCalendar(currentYear, currentMonth); // Re-render calendar
+            } else {
+                console.warn("Deleted event not found in client-side events object.");
+                 closeEventPopup(); // Close popup if event not found client-side
+                 renderCalendar(currentYear, currentMonth); // Re-render calendar
+            }
+
+
+        } catch (error) {
+            console.error("Failed to delete event:", error);
+            alert('일정 삭제에 실패했습니다.');
+            // Handle error
         }
     }
 });
