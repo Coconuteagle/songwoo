@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>행정실 업무 현황표</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <button id="prevMonth">이전 달</button>
+            <h2 id="currentMonthYear"></h2>
+            <button id="nextMonth">다음 달</button>
+            <select id="yearSelect"></select>
+            <select id="monthSelect"></select>
+        </div>
+        <div class="calendar-grid" id="calendarGrid">
+            <div class="day-of-week">일</div>
+            <div class="day-of-week">월</div>
+            <div class="day-of-week">화</div>
+            <div class="day-of-week">수</div>
+            <div class="day-of-week">목</div>
+            <div class="day-of-week">금</div>
+            <div class="day-of-week">토</div>
+            <!-- 날짜 셀은 JavaScript로 채워집니다 -->
+        </div>
+    </div>
+
+    <div class="event-popup" id="eventPopup">
+        <div class="popup-header">
+            <h3 id="popupDate"></h3>
+            <button class="close-popup" id="closePopup">X</button>
+        </div>
+        <div class="popup-body">
+            <label for="author">작성자:</label>
+            <input type="text" id="author">
+            <label for="content">내용:</label>
+            <textarea id="content"></textarea>
+            <div id="eventList">
+                <!-- 일정이 여기에 표시됩니다 -->
+            </div>
+        </div>
+        <div class="popup-footer">
+            <button id="saveEvent">저장</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

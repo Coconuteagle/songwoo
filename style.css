@@ -1,0 +1,283 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center; /* 중앙 정렬 */
+    min-height: 100vh;
+    margin: 0;
+    background-color: #fafafa; /* Lighter background */
+    padding: 20px; /* 상하좌우 패딩 */
+    color: #262626; /* Instagram text color */
+    box-sizing: border-box; /* 패딩을 포함한 크기 계산 */
+}
+
+.calendar-container {
+    background-color: #fff;
+    padding: 30px; /* More padding */
+    border-radius: 12px; /* More rounded corners */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Softer shadow */
+    width: 70%; /* 달력 너비를 %로 조정하여 유연하게 */
+    max-width: 900px; /* 최대 너비 설정 */
+    margin-right: 20px; /* Space between calendar and popup */
+    border: 1px solid #dbdbdb; /* Subtle border */
+    flex-shrink: 0; /* 컨테이너가 줄어들지 않도록 함 */
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px; /* More space below header */
+    padding-bottom: 20px;
+    border-bottom: 1px solid #efefef; /* Separator line */
+}
+
+.calendar-header h2 {
+    margin: 0;
+    font-size: 1.5em;
+}
+
+.calendar-header button,
+.calendar-header select {
+    padding: 10px 15px; /* Larger padding */
+    border: 1px solid #dbdbdb; /* Subtle border */
+    border-radius: 6px; /* More rounded */
+    cursor: pointer;
+    background-color: #fff; /* White background */
+    font-size: 1em;
+    color: #262626;
+    transition: background-color 0.2s ease;
+}
+
+.calendar-header button:hover,
+.calendar-header select:hover {
+    background-color: #fafafa; /* Subtle hover effect */
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px; /* Larger gap */
+}
+
+.day-of-week {
+    text-align: center;
+    font-weight: 600; /* Slightly bolder */
+    padding: 12px 0; /* More padding */
+    background-color: #f0f0f0; /* Lighter background */
+    border-radius: 6px; /* More rounded */
+    font-size: 0.9em;
+    color: #8e8e8e; /* Muted color */
+}
+
+.calendar-day {
+    text-align: center;
+    padding: 15px 8px; /* Adjust padding */
+    border: 1px solid #dbdbdb; /* 명확한 경계선 */
+    border-radius: 8px; /* More rounded */
+    cursor: pointer;
+    position: relative; /* For positioning event list */
+    min-height: 100px; /* 최소 높이 조정 */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Align content to the left */
+    font-size: 0.9em;
+    transition: background-color 0.2s ease;
+    box-sizing: border-box; /* 패딩을 포함한 크기 계산 */
+}
+
+.calendar-day.sunday {
+    color: #ed4956; /* Instagram red */
+}
+
+.calendar-day.saturday {
+    color: #3897f0; /* Instagram blue */
+}
+
+.calendar-day:hover {
+    background-color: #f0f0f0; /* Subtle hover effect */
+}
+
+.calendar-day.empty {
+    background-color: #fafafa; /* Match body background */
+    cursor: default;
+    border-color: transparent; /* No border for empty cells */
+}
+
+.calendar-day .day-number {
+    font-weight: 600; /* Slightly bolder */
+    margin-bottom: 8px; /* More space below number */
+    align-self: center; /* Center the day number */
+    font-size: 1.1em;
+}
+
+.calendar-day .event-list {
+    font-size: 0.75em; /* Slightly smaller font */
+    color: #555; /* Darker color for readability */
+    text-align: left;
+    width: 100%;
+    margin-top: auto; /* Push event list to the bottom */
+    overflow: visible; /* 모든 내용 표시 */
+    max-height: none; /* 높이 제한 제거 */
+    line-height: 1.4; /* Improve readability */
+}
+
+.calendar-day .event-list div {
+    white-space: normal; /* 여러 줄 표시 */
+    overflow: visible; /* 내용 잘림 방지 */
+    text-overflow: clip; /* 말줄임표 제거 */
+    margin-bottom: 3px; /* 일정 항목 간 간격 */
+}
+
+
+.event-popup {
+    position: fixed;
+    position: fixed;
+    top: 50%; /* 화면 세로 중앙 기준 */
+    right: 20px; /* body padding과 일치 */
+    transform: translateY(-50%); /* 세로 중앙 정렬 */
+    width: 350px; /* 너비 조정 */
+    max-height: calc(100vh - 40px); /* 화면 높이에 맞게 최대 높이 설정 (상하 패딩 고려) */
+    overflow-y: auto; /* 내용이 넘칠 경우 스크롤 */
+    background-color: #fff;
+    border-radius: 12px; /* More rounded corners */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Softer shadow */
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    z-index: 1000; /* Ensure it's on top */
+    border: 1px solid #dbdbdb; /* Subtle border */
+    box-sizing: border-box; /* 패딩을 포함한 크기 계산 */
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px; /* More padding */
+    border-bottom: 1px solid #efefef; /* Lighter border */
+}
+
+.popup-header h3 {
+    margin: 0;
+    font-size: 1.2em;
+}
+
+.close-popup {
+    background: none;
+    border: none;
+    font-size: 1.5em; /* Larger close button */
+    cursor: pointer;
+    color: #8e8e8e; /* Muted color */
+    transition: color 0.2s ease;
+}
+
+.close-popup:hover {
+    color: #262626; /* Darker on hover */
+}
+
+.close-popup:hover {
+    color: #777;
+}
+
+.popup-body {
+    padding: 25px; /* More padding */
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Larger gap */
+    overflow-y: visible; /* 팝업 자체 스크롤 */
+}
+
+.popup-body label {
+    font-weight: 600; /* Slightly bolder */
+    font-size: 0.9em;
+    color: #8e8e8e; /* Muted color */
+}
+
+.popup-body input[type="text"],
+.popup-body textarea {
+    width: calc(100% - 24px); /* Adjust for padding and border */
+    padding: 12px; /* More padding */
+    border: 1px solid #dbdbdb; /* Subtle border */
+    border-radius: 6px; /* More rounded */
+    font-size: 1em;
+    color: #262626;
+}
+
+.popup-body textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+#eventList {
+    margin-top: 20px; /* More space above list */
+    border-top: 1px solid #efefef; /* Lighter border */
+    padding-top: 20px; /* More padding */
+}
+
+#eventList div {
+    background-color: #fafafa; /* Lighter background */
+    border: 1px solid #efefef; /* Lighter border */
+    border-radius: 8px; /* More rounded */
+    padding: 12px; /* More padding */
+    margin-bottom: 12px; /* More space below */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+#eventList .event-details {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+#eventList .event-details strong {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: normal; /* 담당자: 스타일을 위해 굵기 해제 */
+}
+
+#eventList .delete-event {
+    background: none;
+    border: none;
+    color: #ed4956; /* Instagram red */
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+#eventList .delete-event:hover {
+    color: #c0392b; /* Darker red on hover */
+}
+
+#eventList .delete-event:hover {
+    color: #c9302c;
+}
+
+
+.popup-footer {
+    padding: 20px 25px; /* More padding */
+    border-top: 1px solid #efefef; /* Lighter border */
+    text-align: right;
+}
+
+.popup-footer button {
+    padding: 12px 25px; /* More padding */
+    background-color: #3897f0; /* Instagram blue */
+    color: white;
+    border: none;
+    border-radius: 6px; /* More rounded */
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.popup-footer button:hover {
+    background-color: #308ee0; /* Darker blue on hover */
+}
+
+.popup-footer button:hover {
+    background-color: #4cae4c;
+}
