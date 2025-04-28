@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentYear;
     let currentMonth; // 0-indexed (0 for January, 11 for December)
-    let events = {}; // 서버에서 데이터를 불러올 예정
+    let events = {}; // Will be populated from the server
 
     // Populate year and month select dropdowns
     const currentFullYear = new Date().getFullYear();
@@ -153,36 +153,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         currentMonthYearHeader.textContent = `${year}년 ${month + 1}월`;
-        await fetchEventsFromServer(year, month); // Fetch events after rendering the calendar structure
+        await fetchEventsFromServer(); // Fetch events after rendering the calendar structure
     }
 
-    async function fetchEventsFromServer(year, month) {
-        // TODO: Replace with actual API call to fetch events for the given year and month
-        console.log(`Fetching events for ${year}-${month + 1} from server...`);
+    async function fetchEventsFromServer() {
+        // Consider filtering by year/month on the backend in the future for performance
+        console.log(`Workspaceing all events from server...`);
         try {
-            // Example fetch (replace with your actual endpoint and method)
-            // const response = await fetch(`/api/events?year=${year}&month=${month + 1}`);
-            // if (!response.ok) {
-            //     throw new Error(`HTTP error! status: ${response.status}`);
-            // }
-            // const data = await response.json();
-            // events = data; // Assuming the server returns data in the expected format
-
-            // Placeholder data for demonstration
-            events = {
-                "2025-04-28": [
-                    { author: "홍길동", content: "회의 참석" },
-                    { author: "김철수", content: "보고서 제출" }
-                ],
-                "2025-05-01": [
-                    { author: "이영희", content: "프로젝트 마감" }
-                ]
-            };
+            const response = await fetch('/api/events'); // Use the backend API endpoint
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            events = data; // Assuming the server returns data in the format { "YYYY-MM-DD": [{id, author, content}, ...] }
 
             displayEvents(); // Display fetched events
         } catch (error) {
             console.error("Failed to fetch events:", error);
-            // Handle error (e.g., show error message to user)
+            alert('일정 불러오기에 실패했습니다.');
         }
     }
 
@@ -198,9 +186,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Limit to 6 events for display in the calendar cell
                 events[date].slice(0, 6).forEach(event => {
                     const eventDiv = document.createElement('div');
-                    eventDiv.innerHTML = `
-                        <p>${event.content}</p>
-                    `; // 담당자 정보는 팝업에서만 표시
+                    // Display only content, make it smaller
+                    eventDiv.innerHTML = `<p class="calendar-event-item">${event.content}</p>`;
                     eventListForDay.appendChild(eventDiv);
                 });
                  // Add indicator if there are more than 6 events
@@ -209,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     moreIndicator.textContent = `... 외 ${events[date].length - 6}개`;
                     moreIndicator.style.fontSize = '0.7em';
                     moreIndicator.style.color = '#8e8e8e';
+                    moreIndicator.style.marginTop = '2px';
                     eventListForDay.appendChild(moreIndicator);
                 }
             }
@@ -222,26 +210,32 @@ document.addEventListener('DOMContentLoaded', () => {
         eventListDiv.innerHTML = ''; // Clear previous event list in popup
 
         const eventsForDate = events[date] || [];
-        eventsForDate.forEach((event, index) => {
-            const eventDiv = document.createElement('div');
-            eventDiv.innerHTML = `
-                <div class="event-details">
-                    <strong>${event.author}</strong>
-                    <p>${event.content}</p>
-                </div>
-                <button class="delete-event" data-date="${date}" data-index="${index}">삭제</button>
-            `;
-            eventListDiv.appendChild(eventDiv);
-        });
-
-        // Add event listeners for delete buttons
-        eventListDiv.querySelectorAll('.delete-event').forEach(button => {
-            button.addEventListener('click', async (e) => {
-                const dateToDelete = e.target.dataset.date;
-                const indexToDelete = parseInt(e.target.dataset.index);
-                await deleteEvent(dateToDelete, indexToDelete);
+        if (eventsForDate.length === 0) {
+            eventListDiv.innerHTML = '<p>이 날짜에 등록된 일정이 없습니다.</p>';
+        } else {
+            eventsForDate.forEach(event => { // No index needed here anymore
+                const eventDiv = document.createElement('div');
+                eventDiv.classList.add('event-popup-item'); // Add a class for styling
+                eventDiv.innerHTML = `
+                    <div class="event-details">
+                        <strong>${event.author}:</strong>
+                        <p>${event.content}</p>
+                    </div>
+                    <button class="delete-event" data-event-id="${event.id}">삭제</button>
+                `; // data-event-id attribute has the event ID
+                eventListDiv.appendChild(eventDiv);
             });
-        });
+        }
+
+        // Add event listeners for delete buttons (use event delegation for efficiency)
+        eventListDiv.querySelectorAll('.delete-event').forEach(button => {
+             button.addEventListener('click', async (e) => {
+                 if (confirm('정말로 이 일정을 삭제하시겠습니까?')) {
+                     const eventIdToDelete = e.target.dataset.eventId; // Get event ID
+                     await deleteEvent(eventIdToDelete); // Call deleteEvent with the ID
+                 }
+             });
+         });
 
         eventPopup.style.display = 'flex'; // Show the popup
         saveEventButton.dataset.date = date; // Store date for saving
@@ -258,68 +252,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (author && content) {
             const newEvent = { author, content };
-            // TODO: Replace with actual API call to save the new event
             console.log("Saving event to server:", { date, event: newEvent });
             try {
-                // Example fetch (replace with your actual endpoint and method)
-                // const response = await fetch('/api/events', {
-                //     method: 'POST',
-                //     headers: {
-                //         'Content-Type': 'application/json',
-                //     },
-                //     body: JSON.stringify({ date, event: newEvent }),
-                // });
-                // if (!response.ok) {
-                //     throw new Error(`HTTP error! status: ${response.status}`);
-                // }
-                // const savedEvent = await response.json(); // Assuming server returns the saved event
-
-                // For placeholder, manually add to events object
-                 if (!events[date]) {
-                     events[date] = [];
-                 }
-                 events[date].push(newEvent);
-
-
+                const response = await fetch('/api/events', { // Use the backend API endpoint
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ date, event: newEvent }),
+                });
+                if (!response.ok) {
+                     const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' })); // Try to parse error
+                     throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message}`);
+                }
+                // Assuming successful save, re-fetch and render calendar
                 closeEventPopup();
-                renderCalendar(currentYear, currentMonth); // Re-render calendar to show new event
+                await renderCalendar(currentYear, currentMonth); // Use await here
             } catch (error) {
                 console.error("Failed to save event:", error);
-                alert('일정 저장에 실패했습니다.');
-                // Handle error
+                alert(`일정 저장에 실패했습니다: ${error.message}`);
             }
         } else {
             alert('작성자와 내용을 모두 입력해주세요.');
         }
     }
 
-    async function deleteEvent(date, index) {
-        if (events[date] && events[date][index]) {
-            const eventToDelete = events[date][index];
-            // TODO: Replace with actual API call to delete the event
-            console.log("Deleting event from server:", { date, index, event: eventToDelete });
-             try {
-                // Example fetch (replace with your actual endpoint and method)
-                // const response = await fetch(`/api/events?date=${date}&index=${index}`, {
-                //     method: 'DELETE',
-                // });
-                // if (!response.ok) {
-                //     throw new Error(`HTTP error! status: ${response.status}`);
-                // }
+    // *** CORRECTED deleteEvent function ***
+    async function deleteEvent(eventId) { // Accepts eventId now
+        console.log("Deleting event from server:", { eventId });
+        try {
+            // Make the actual API call to the backend DELETE endpoint
+            const response = await fetch(`/api/events/${eventId}`, { // Use the correct endpoint with eventId
+                method: 'DELETE',
+            });
 
-                // For placeholder, manually remove from events object
-                events[date].splice(index, 1);
-                if (events[date].length === 0) {
-                    delete events[date]; // Remove date key if no events left
-                }
-
-                openEventPopup(date); // Refresh popup content
-                renderCalendar(currentYear, currentMonth); // Re-render calendar to remove event
-            } catch (error) {
-                console.error("Failed to delete event:", error);
-                alert('일정 삭제에 실패했습니다.');
-                // Handle error
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' })); // Try to parse error
+                throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.message}`);
             }
+
+             console.log("Event deleted successfully from server");
+
+             // Re-fetch events and update UI
+             const currentDate = popupDateHeader.textContent; // Get date from popup header
+             await fetchEventsFromServer(); // Fetch updated list from server
+             renderCalendar(currentYear, currentMonth); // Re-render calendar
+             openEventPopup(currentDate); // Refresh popup content with updated data
+
+        } catch (error) {
+            console.error("Failed to delete event:", error);
+            alert(`일정 삭제에 실패했습니다: ${error.message}`);
+            // Handle error (e.g., maybe just close popup or show error in popup)
         }
     }
 });
