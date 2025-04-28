@@ -84,8 +84,14 @@ def delete_event():
 
 
 if __name__ == '__main__':
-    # 배포 환경에서는 PORT 환경 변수를 사용하고, 없으면 기본값 5000 사용
-    port = int(os.environ.get('PORT', 5000))
+    # 배포 환경에서는 PORT 환경 변수를 사용하고, 없거나 유효하지 않으면 기본값 5000 사용
+    port = 5000 # 기본값 설정
+    try:
+        port = int(os.environ.get('PORT', str(port))) # 환경 변수 읽기 시도
+    except ValueError:
+        # PORT 환경 변수가 숫자가 아닌 경우 기본값 사용
+        print("Warning: PORT environment variable is not a valid integer. Using default port 5000.")
+    
     # TODO: 배포 환경에서는 debug=False로 설정해야 합니다.
     # Cloudtype 배포 시에는 gunicorn 등을 사용하도록 변경해야 할 수 있습니다.
     app.run(debug=True, host='0.0.0.0', port=port)
