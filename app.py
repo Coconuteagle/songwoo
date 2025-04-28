@@ -84,6 +84,8 @@ def delete_event():
 
 
 if __name__ == '__main__':
-    # TODO: 배포 환경에 맞게 debug=False 및 host/port 설정 변경 필요
+    # 배포 환경에서는 PORT 환경 변수를 사용하고, 없으면 기본값 5000 사용
+    port = int(os.environ.get('PORT', 5000))
+    # TODO: 배포 환경에서는 debug=False로 설정해야 합니다.
     # Cloudtype 배포 시에는 gunicorn 등을 사용하도록 변경해야 할 수 있습니다.
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=port)
